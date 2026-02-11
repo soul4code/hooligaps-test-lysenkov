@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=postgres
+      - DB_HOST=db
+      - DB_PASSWORD=postgres
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - migrations
+    networks:
+      - app-network
+
+  migrations:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DB_NAME=postgres
+      - DB_HOST=db
+      - DB_PASSWORD=postgres
+    depends_on:
+      - db
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "exit 0" ]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://backend:8000  # Для Docker-сети
+      - NODE_ENV=development
+      - YARN_ENV=production
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules              # Избегаем перезаписи node_modules
+    tty: true
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
