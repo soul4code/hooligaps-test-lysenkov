@@ -4,3 +4,5 @@
 2. Инициализировать сабмодули `git submodule init`
 3. Обновить сабмодули `git submodule update`
 4. Запустить в docker `docker-compose up --build`
+
+Будет доступно по адресу http://localhost:5173
